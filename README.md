@@ -37,4 +37,4 @@
 
 - [SheetJS](https://sheetjs.com/) 0.18.5（Apache-2.0）
 - [Chart.js](https://www.chartjs.org/) 4.4.7（MIT）
-- [twzipcode-data](https://github.com/vinkla/twzipcode) 2.0.0（MIT）
+- [twzipcode-data](https://github.com/yyc1217/twzipcode-data) 2.0.0（MIT）
