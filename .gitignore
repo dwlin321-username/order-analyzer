@@ -1,0 +1,6 @@
+# 防止顧客訂單資料被誤傳到 GitHub
+*.xlsx
+*.xls
+*.csv
+node_modules/
+.DS_Store

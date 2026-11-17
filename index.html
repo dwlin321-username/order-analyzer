@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!--
+    隱私保護：禁止此頁面對外發出任何網路連線（connect-src 'none'），
+    並只允許載入本站自己的程式碼與樣式。上傳的檔案只在瀏覽器記憶體中處理。
+  -->
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'none'; form-action 'none'; base-uri 'none'">
+  <meta name="referrer" content="no-referrer">
+  <title>顧客訂單分析</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%232a78d6'/%3E%3Crect x='8' y='16' width='4' height='9' rx='1.5' fill='white'/%3E%3Crect x='14' y='10' width='4' height='15' rx='1.5' fill='white'/%3E%3Crect x='20' y='13' width='4' height='12' rx='1.5' fill='white'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- 上傳畫面 -->
+  <main id="upload-view" class="upload-view">
+    <h1 class="app-title">顧客訂單分析</h1>
+    <label id="dropzone" class="dropzone" for="file-input" tabindex="0">
+      <svg class="dz-icon" viewBox="0 0 48 48" aria-hidden="true">
+        <path d="M14 30H12a8 8 0 0 1-.9-15.95A11 11 0 0 1 32.6 11.6 9 9 0 1 1 36 30h-2" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M24 40V22m0 0-6 6m6-6 6 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span class="dz-title">請將檔案拖曳至此處</span>
+      <span class="dz-sub">或點一下選擇檔案・支援 .xlsx、.xls、.csv</span>
+    </label>
+    <input id="file-input" type="file" accept=".xlsx,.xls,.csv" hidden>
+    <div id="error-box" class="error-box" role="alert" hidden></div>
+    <p class="privacy">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 7V5a3.5 3.5 0 0 1 7 0v2" fill="none" stroke="currentColor" stroke-width="1.4"/><rect x="3" y="7" width="10" height="7" rx="1.8" fill="currentColor"/></svg>
+      檔案只在你的瀏覽器中分析，不會上傳到任何伺服器
+    </p>
+  </main>
+
+  <!-- 分析結果 -->
+  <main id="result-view" class="result-view" hidden>
+    <header class="result-header">
+      <div>
+        <h1 class="result-title">分析結果</h1>
+        <p id="file-meta" class="file-meta"></p>
+      </div>
+      <button id="reset-btn" class="btn" type="button">重新上傳</button>
+    </header>
+
+    <section class="kpis" aria-label="摘要">
+      <div class="kpi"><span class="kpi-label">總訂單數</span><span class="kpi-value" id="kpi-orders"></span></div>
+      <div class="kpi"><span class="kpi-label">總營業額</span><span class="kpi-value" id="kpi-revenue"></span></div>
+      <div class="kpi"><span class="kpi-label">平均客單價</span><span class="kpi-value" id="kpi-aov"></span></div>
+      <div class="kpi"><span class="kpi-label">離島訂單</span><span class="kpi-value" id="kpi-island"></span></div>
+    </section>
+
+    <div class="grid">
+      <section class="card card-region">
+        <div class="card-head">
+          <div>
+            <h2 id="region-title">收貨縣市分布</h2>
+            <p class="card-sub" id="region-sub">依收貨人地址・點選縣市可查看行政區</p>
+          </div>
+          <button id="region-back" class="btn btn-small" type="button" hidden>‹ 全部縣市</button>
+        </div>
+        <div id="region-bars" class="hbars"></div>
+      </section>
+
+      <div class="stack">
+        <section class="card">
+          <div class="card-head"><div><h2>付款方式</h2><p class="card-sub">依訂單數</p></div></div>
+          <div class="donut-wrap">
+            <div class="donut-canvas"><canvas id="pay-chart" role="img" aria-label="付款方式比例甜甜圈圖"></canvas></div>
+            <ul id="pay-legend" class="legend"></ul>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-head"><div><h2>熱銷商品前 10 名</h2><p class="card-sub">依銷售數量</p></div></div>
+          <div id="top-bars" class="hbars ranked" role="list"></div>
+          <p id="top-note" class="note" hidden></p>
+        </section>
+      </div>
+
+      <section class="card card-wide">
+        <div class="card-head"><div><h2>每筆訂單商品數分布</h2><p class="card-sub">每 10 個為一組，超過 200 個合併為「201 以上」</p></div></div>
+        <div class="hist-canvas"><canvas id="qty-chart" role="img" aria-label="每筆訂單商品數分布長條圖"></canvas></div>
+      </section>
+
+      <section id="warn-card" class="card card-wide warn-card" hidden>
+        <details>
+          <summary><span class="warn-dot" aria-hidden="true">!</span><span id="warn-summary"></span></summary>
+          <div id="warn-body"></div>
+        </details>
+      </section>
+    </div>
+
+    <p class="privacy">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 7V5a3.5 3.5 0 0 1 7 0v2" fill="none" stroke="currentColor" stroke-width="1.4"/><rect x="3" y="7" width="10" height="7" rx="1.8" fill="currentColor"/></svg>
+      資料只在你的瀏覽器中分析，關閉或重新整理頁面後即清除
+    </p>
+  </main>
+
+  <script src="vendor/xlsx.full.min.js"></script>
+  <script src="vendor/chart.umd.js"></script>
+  <script src="js/zipdata.js"></script>
+  <script src="js/analyze.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
